@@ -1,0 +1,107 @@
+/**
+  \file arincRX.pio
+
+  \copyright Copyright (c) 2024 qinno Ralf Wolters. All right reserved.
+
+  \license
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, version 3. \n
+  This program is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with this program. If not, see <http://www.gnu.org/licenses/>. \n
+  If you are interested in OEM applications, you may prefer a commercial license. \n
+  Contact us for more information on commercial or OEM licenses.
+
+  \version  001 - inital \n
+
+  \brief ARINC-429 RX PIO program
+*/
+
+.program arincRX
+
+    ; pins: HIGH = pin+0, TRIGGER = pin+1
+    ; signaling in bittime is bit - NULL, each half of bittime
+    ; so catch data after 2, gap after 6 clocks
+
+    ;               ____
+    ; Trigger:  ____    ________
+    ;
+    ; Data:     ____????________
+    ;
+    ;               123456781234...
+
+.define public CLKMUL 8                 ; clock = baudrate * cLKMUL
+
+start:
+.wrap_target
+waitgap:                                ; wait for gap min. 4 bit-times
+    set y, 14                           ; 4 bit = 4*8 div 2 instruction counts
+gapdec:
+    jmp pin, waitgap                    ; +0 something on the bus (Trigger)
+    jmp y--, gapdec                     ; +1
+receive:
+    set x, 31                           ; bit counter 32
+bitloop:
+    wait 1 pin 1                        ; +0 wait for trigger pin high
+    in pins, 1 [3]                      ; +1 Shift one data bit (from HIGH) into input shift register
+    jmp pin, frameerr                   ; +5 handle frame error
+    jmp x-- bitloop                     ; +6 Loop all bits
+    push                                ; +7 to RX FIFO
+    irq set 0b100 rel                   ; signalize done interrupt
+.wrap                                   ; next message
+
+frameerr:
+    irq set 0b000 rel                   ; signalize error interrupt
+    jmp waitgap                         ; and wait next message
+
+
+% c-sdk {
+
+// configure state machine
+
+void arincRX_program_init(PIO pio, uint sm, uint offset, uint pin, uint baudrate) {
+
+   const uint8_t pincount = 2; // needs to be consecutive e.g. 19,20 or 4,5
+
+   for (uint i = 0; i < pincount; i++) {
+        pio_gpio_init(pio, (pin+i) % 24);   // init pins
+   }
+
+   gpio_pull_up(pin);
+   gpio_pull_up(pin+1);
+
+   // pins to intput
+   pio_sm_set_consecutive_pindirs(pio, sm, pin, pincount, false);
+
+   // get default config ???
+   pio_sm_config c = arincRX_program_get_default_config(offset);
+
+   // in-mapping:
+   sm_config_set_in_pins(&c, pin);       // for WAIT, IN
+   sm_config_set_jmp_pin(&c, pin+1);     // for JMP
+
+   // div <= 65535 (= 2^16-1) - not approved
+   float div = (float)clock_get_hz(clk_sys) / (baudrate * arincRX_CLKMUL);
+
+   // clock divider
+   sm_config_set_clkdiv(&c, div);
+
+   // combine both 4x 32bit FIFOs to 8x 32-Bit FIFO
+   sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_RX);
+
+   // left shift, no auto-pull, 32 Bits (Bit 0 first)
+   // (pio_sm_config * c, bool shift_right, bool autopull, uint pull_threshold)
+   sm_config_set_in_shift(&c, true, false, 32);
+
+   // init state machine
+   pio_sm_init(pio, sm, offset, &c);
+
+   // and start
+   pio_sm_set_enabled(pio, sm, true);
+}
+
+%}

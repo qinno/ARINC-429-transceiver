@@ -1,0 +1,115 @@
+/**
+  \file arincTX.pio
+
+  \copyright Copyright (c) 2024 qinno Ralf Wolters. All right reserved.
+
+  \license
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, version 3. \n
+  This program is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with this program. If not, see <http://www.gnu.org/licenses/>. \n
+  If you are interested in OEM applications, you may prefer a commercial license. \n
+  Contact us for more information on commercial or OEM licenses.
+
+  \version  001 - inital \n
+
+  \brief ARINC-429 TX PIO program
+*/
+
+
+.program arincTX
+.side_set 2 opt                         ; the TX control pins - High and Low
+
+    ; pins: HIGH = pin+0, LOW = pin+1
+    ; signaling in bittime is bit + NULL, each half of bittime
+    ;               ____
+    ; HIGH:     ____    ________
+    ;                       ____
+    ; LOw:      ____________
+    ;               ____
+    ; LINE A:   ____    ____
+    ;                       ____
+    ;
+    ; CLKCNT:   1234567812345678
+
+                                        ; line levels 0b11 results in NULL, not used
+.define DATA_HIGH  0b01                 ; HIGH
+.define DATA_LOW   0b10                 ; LOW
+.define DATA_NULL  0b00                 ; NULL - line empty
+
+.define public CLKMUL 8                 ; clock = baudrate * CLKMUL
+
+start:
+.wrap_target
+    nop     side DATA_NULL              ; release data lines
+    pull    block                       ; wait for data
+
+next_bit:
+    out x, 1 side DATA_NULL             ; +0 load 1 bit from OSR to x, side set NULL
+    jmp !x send_low side DATA_NULL      ; +1 check if low
+
+send_high:
+    jmp send_null side DATA_HIGH [3]    ; +5 send high level, jump to release
+
+send_low:
+    jmp send_null side DATA_LOW [3]     ; +5 send low level, jump to release
+
+send_null:
+    jmp !OSRE, next_bit side DATA_NULL [1] ; continue with next bit
+
+gap:
+    set y, 15 side DATA_NULL            ; gap min. 4 bit = 4*8
+gapcnt:
+    nop side DATA_NULL
+    jmp y--, gapcnt  side DATA_NULL     ; countdown
+.wrap
+
+
+% c-sdk {
+
+// configure state machine
+
+void arincTX_program_init(PIO pio, uint sm, uint offset, uint pin, uint baudrate) {
+
+   const uint8_t pincount = 2; // TX high pin first, needs to be consecutive e.g. 19,20 or 4,5
+
+   for (uint i = 0; i < pincount; i++) {
+        pio_gpio_init(pio, (pin+i) % 32);   // init pins
+   }
+
+   // pins to output
+   pio_sm_set_consecutive_pindirs(pio, sm, pin, pincount, true);
+
+   // get default config ???
+   pio_sm_config c = arincTX_program_get_default_config(offset);
+
+   // out-mapping:
+   sm_config_set_out_pins(&c, pin, pincount);
+   sm_config_set_sideset_pins(&c, pin);
+
+   // div <= 65535 (= 2^16-1) - not approved
+   float div = (float)clock_get_hz(clk_sys) / (float)(baudrate * arincTX_CLKMUL);
+
+   // clock divider
+   sm_config_set_clkdiv(&c, div);
+
+   // combine both 4x 32bit FIFOs to 8x 32-Bit FIFO
+   sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
+
+   // left shift, no auto-pull, 32 Bits (Bit 0 first)
+   // (pio_sm_config * c, bool shift_right, bool autopull, uint pull_threshold)
+   sm_config_set_out_shift(&c, true, false, 32);
+
+   // init state machine
+   pio_sm_init(pio, sm, offset, &c);
+
+   // and start
+   pio_sm_set_enabled(pio, sm, true);
+}
+
+%}
