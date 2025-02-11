@@ -1,6 +1,6 @@
 # ARINC-POC
 
-[[/photos/ARINC-POC-top.jpg|PREVIEW]]
+<img title="" src="/photos/ARINC-POC-top.jpg" alt="Top view" data-align="inline">
 ---
 
 # About
