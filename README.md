@@ -1,6 +1,6 @@
 # ARINC-POC
 
-![Preview](P:\qinno\25_ARINC-POC\25_ARINC-POC_si\github\photos\ARINC-POC-top.jpg)
+![Preview](.\photos\ARINC-POC-top.jpg)
 ---
 
 # About
