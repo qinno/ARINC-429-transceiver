@@ -1,13 +1,13 @@
 # ARINC-POC
 
-![Preview](photos\ARINC-POC-top.jpg)
+[[photos\ARINC-POC-top.jpg|PREVIEW]]
 ---
 
 # About
 
 This project is a (successful) proof of concept for a low-cost ARINC-429 transmitter/receiver based on Raspberry's RP2xxx family.
 
-<img title="" src="file:///P:/qinno/25_ARINC-POC/25_ARINC-POC_si/github/photos/Aufbau12Channel.jpg" alt="Aufbau12Channel.jpg" data-align="inline">
+<img title="" src="/photos/Aufbau12Channel.jpg" alt="Aufbau12Channel.jpg" data-align="inline">
 
 12-channel (6 x TX, 6 x RX) loopback test with Raspberry PICO-2
 
@@ -21,11 +21,11 @@ Each channel can act as either a transmitter or receiver, limited only by the ci
 
 - an ARINC-429 optimized driver circuit on a PCB inspired by a design by Stephen Woodward [schematic](./schematic/ARINC-POC.pdf)
 
-<img title="" src="file:///P:/qinno/25_ARINC-POC/25_ARINC-POC_si/github/photos/ARINC-POC-bot.jpg" alt="ARINC-POC-top.jpg" data-align="center">
+<img title="" src="/photos/ARINC-POC-bot.jpg" alt="ARINC-POC-top.jpg" data-align="center">
 
 - an RP2040/RP2350 module like Raspberry PICO/PICO2, also the -W variants
   
-  <img src="file:///P:/qinno/25_ARINC-POC/25_ARINC-POC_si/github/photos/PICO2.png" title="" alt="PICO2.png" data-align="center">
+  <img src="photos/PICO2.png" title="" alt="PICO2.png" data-align="center">
 
 - the lab software written for the Arduino IDE + Earl Philhower's great Arduino-Pico BSP. [source](./src/Arinc429)
 
