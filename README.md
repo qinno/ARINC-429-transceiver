@@ -18,7 +18,7 @@ Each channel can act as either a transmitter or receiver, limited only by the ci
 
 # Built With
 
-- an ARINC-429 optimized driver circuit on a PCB inspired by a design by Stephen Woodward [schematic](./schematic/ARINC-POC.pdf)
+- an ARINC-429 optimized driver circuit on a PCB inspired by a design by Stephen Woodward [schematic](./schematic/ARINC-POC.pdf) and [ideas on Stackexchange](https://electronics.stackexchange.com/questions/648472/differential-to-single-ended-converter-arinc-429)
 
 <img title="" src="/photos/ARINC-POC-bot.jpg" alt="ARINC-POC-top.jpg" data-align="center">
 
