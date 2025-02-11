@@ -1,7 +1,6 @@
 # ARINC-POC
 
 <img title="" src="/photos/ARINC-POC-top.jpg" alt="Top view" data-align="inline">
----
 
 # About
 
