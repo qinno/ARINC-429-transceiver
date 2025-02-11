@@ -1,6 +1,6 @@
 # ARINC-POC
 
-![Preview](.\photos\ARINC-POC-top.jpg)
+![Preview](photos\ARINC-POC-top.jpg)
 ---
 
 # About
